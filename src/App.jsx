@@ -34,17 +34,38 @@ function App() {
 
     // Create the main sheet
     const mainSheetData = jsonData.map((item, index) => {
-      const flatItem = { ...item };
-      if (item.banks && item.banks.length > 0) {
-        // Create a hyperlink formula
-        flatItem.banks = {
-          f: `=HYPERLINK("#'Banks_${index + 1}'!A1","Click to view ${
-            item.banks.length
-          } bank(s)")`,
-        };
-      } else {
-        flatItem.banks = "No banks";
-      }
+      // Start with a flat copy of the item
+      const flatItem = {};
+      
+      // Process each field
+      Object.entries(item).forEach(([key, value]) => {
+        if (key === 'banks' && value && value.length > 0) {
+          // Handle banks specially as before
+          flatItem[key] = {
+            f: `=HYPERLINK("#'Banks_${index + 1}'!A1","Click to view ${value.length} bank(s)")`,
+          };
+        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+          // Handle nested objects by creating separate columns for each property
+          Object.entries(value).forEach(([subKey, subValue]) => {
+            flatItem[`${key}.${subKey}`] = subValue;
+          });
+        } else if (Array.isArray(value)) {
+          // Handle arrays
+          if (value.length === 0) {
+            flatItem[key] = '';
+          } else if (typeof value[0] === 'object') {
+            // Array of objects - stringify each object and join
+            flatItem[key] = value.map(item => JSON.stringify(item)).join(', ');
+          } else {
+            // Array of primitives - just join with commas
+            flatItem[key] = value.join(', ');
+          }
+        } else {
+          // Handle primitive values as is
+          flatItem[key] = value;
+        }
+      });
+      
       return flatItem;
     });
 

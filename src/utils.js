@@ -6,6 +6,10 @@ export function adjustSheetCellWidth(sheet, data) {
   // Initialize with header lengths
   headerRow.forEach((header) => {
     columnWidths[header] = header.length;
+
+    if (header === "paymentGateways") {
+      console.log(columnWidths[header]);
+    }
   });
 
   // Check data lengths
