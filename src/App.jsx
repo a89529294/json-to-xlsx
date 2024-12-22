@@ -13,13 +13,16 @@ function App() {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target.result);
-          console.log('Parsed data:', data);
+          console.log("Parsed data:", data);
           // Calculate total length first to avoid array resizing
-          const totalLength = data.reduce((sum, item) => sum + (item?.data?.list?.length || 0), 0);
+          const totalLength = data.reduce(
+            (sum, item) => sum + (item?.data?.list?.length || 0),
+            0
+          );
           // Pre-allocate array with known size
           const allLists = new Array(totalLength);
           let currentIndex = 0;
-          
+
           // Fill the array directly without spreading
           for (const item of data) {
             const list = item?.data?.list;
@@ -29,8 +32,8 @@ function App() {
               }
             }
           }
-          
-          console.log('Combined list data length:', allLists.length);
+
+          console.log("Combined list data length:", allLists.length);
           setJsonData(allLists);
           event.target.value = null;
         } catch (error) {
@@ -47,23 +50,27 @@ function App() {
       return;
     }
 
-    console.log('Converting data:', jsonData);
+    console.log("Converting data:", jsonData);
     // Create the main workbook
     const workbook = XLSX.utils.book_new();
 
     // Create the main sheet
-    const mainSheetData = jsonData.map((item) => {
-      console.log('Processing item:', item);
-      // Only include the specified columns with Chinese names
-      return {
-        代理商: item.agentAccount,
-        使用者名稱: item.memberName,
-        帳號: item.account,
-        手機號碼: item.phoneNumber,
-      };
-    });
+    const mainSheetData = jsonData
+      .map((item) => {
+        // console.log("Processing item:", item);
+        // Only include the specified columns with Chinese names
+        return {
+          代理商: item.agentAccount,
+          使用者名稱: item.memberName,
+          帳號: item.account,
+          手機號碼: item.phoneNumber,
+        };
+      })
+      .filter((item) => {
+        return item.代理商 !== "plg-main";
+      });
 
-    console.log('Sheet data:', mainSheetData);
+    console.log("Sheet data:", mainSheetData);
 
     // Create the main worksheet
     const mainWorksheet = XLSX.utils.json_to_sheet(mainSheetData);
