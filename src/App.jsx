@@ -1,7 +1,6 @@
 import { useState } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import "./App.css";
-import { adjustSheetCellWidth } from "./utils";
 
 function App() {
   const [jsonData, setJsonData] = useState(null);
@@ -14,16 +13,13 @@ function App() {
         try {
           const data = JSON.parse(e.target.result);
           console.log("Parsed data:", data);
-          // Calculate total length first to avoid array resizing
           const totalLength = data.reduce(
             (sum, item) => sum + (item?.data?.list?.length || 0),
             0
           );
-          // Pre-allocate array with known size
           const allLists = new Array(totalLength);
           let currentIndex = 0;
 
-          // Fill the array directly without spreading
           for (const item of data) {
             const list = item?.data?.list;
             if (list && list.length > 0) {
@@ -44,44 +40,69 @@ function App() {
     }
   };
 
-  const convertToXLSX = () => {
+  const convertToXLSX = async () => {
     if (!jsonData) {
       alert("Please upload a JSON file first");
       return;
     }
 
     console.log("Converting data:", jsonData);
-    // Create the main workbook
-    const workbook = XLSX.utils.book_new();
+    
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Main');
 
-    // Create the main sheet
-    const mainSheetData = jsonData.map((item) => {
-      // console.log("Processing item:", item);
-      // Only include the specified columns with Chinese names
-      return {
-        代理商: item.agentAccount,
-        使用者名稱: item.memberName,
-        帳號: item.account,
-        手機號碼: item.phoneNumber,
-      };
+    // Define columns
+    worksheet.columns = [
+      { header: '代理商', key: 'agentAccount', width: 15 },
+      { header: '使用者名稱', key: 'memberName', width: 15 },
+      { header: '帳號', key: 'account', width: 15 },
+      { header: '手機號碼', key: 'phoneNumber', width: 15 }
+    ];
+
+    // Add rows and apply conditional formatting
+    jsonData.forEach((item) => {
+      const row = worksheet.addRow({
+        agentAccount: item.agentAccount,
+        memberName: item.memberName,
+        account: item.account,
+        phoneNumber: item.phoneNumber
+      });
+
+      // Check if phone number is fake (doesn't start with 886)
+      const phoneNumber = String(item.phoneNumber);
+      if (!phoneNumber.startsWith('886')) {
+        // Apply light red background to all cells in the row
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFE0E0' } // Light red color
+          };
+        });
+      }
     });
-    // .filter((item) => {
-    //   return item.代理商 !== "plg-main";
-    // });
 
-    console.log("Sheet data:", mainSheetData);
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
 
-    // Create the main worksheet
-    const mainWorksheet = XLSX.utils.json_to_sheet(mainSheetData);
-
-    // adjustSheetCellWidth(mainWorksheet, mainSheetData);
-
-    // Add the main sheet to workbook
-    XLSX.utils.book_append_sheet(workbook, mainWorksheet, "Main");
-
-    // Write the file
-    XLSX.writeFile(workbook, "customer_data.xlsx");
-    setJsonData(null);
+    try {
+      // Generate the file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'customer_data.xlsx';
+      a.click();
+      window.URL.revokeObjectURL(url);
+      setJsonData(null);
+    } catch (error) {
+      console.error('Error generating Excel file:', error);
+      alert('Error generating Excel file');
+    }
   };
 
   return (
