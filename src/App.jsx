@@ -55,20 +55,19 @@ function App() {
     const workbook = XLSX.utils.book_new();
 
     // Create the main sheet
-    const mainSheetData = jsonData
-      .map((item) => {
-        // console.log("Processing item:", item);
-        // Only include the specified columns with Chinese names
-        return {
-          代理商: item.agentAccount,
-          使用者名稱: item.memberName,
-          帳號: item.account,
-          手機號碼: item.phoneNumber,
-        };
-      })
-      .filter((item) => {
-        return item.代理商 !== "plg-main";
-      });
+    const mainSheetData = jsonData.map((item) => {
+      // console.log("Processing item:", item);
+      // Only include the specified columns with Chinese names
+      return {
+        代理商: item.agentAccount,
+        使用者名稱: item.memberName,
+        帳號: item.account,
+        手機號碼: item.phoneNumber,
+      };
+    });
+    // .filter((item) => {
+    //   return item.代理商 !== "plg-main";
+    // });
 
     console.log("Sheet data:", mainSheetData);
 
