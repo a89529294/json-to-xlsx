@@ -80,7 +80,7 @@ function App() {
           totalDeposit: item.history?.totalDeposit || 0,
           totalWithdrawal: item.history?.totalWithdrawal || 0,
           totalWinLose: item.history?.totalWinLose || 0,
-          totalProfit: (item.history?.totalDeposit || 0) - (item.history?.totalWithdrawal || 0),
+          totalProfit: item.totalProfit,
         });
 
         // Check if phone number is fake (doesn't start with 886)
