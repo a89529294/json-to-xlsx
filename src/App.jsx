@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ExcelJS from "exceljs";
+import { fakePhoneNumbers } from "./fakePhoneNumbers";
 import "./App.css";
 
 function App() {
@@ -47,61 +48,76 @@ function App() {
     }
 
     console.log("Converting data:", jsonData);
-    
+
     // Create a new workbook
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Main');
+    const worksheet = workbook.addWorksheet("Main");
 
     // Define columns
     worksheet.columns = [
-      { header: '代理商', key: 'agentAccount', width: 15 },
-      { header: '使用者名稱', key: 'memberName', width: 15 },
-      { header: '帳號', key: 'account', width: 15 },
-      { header: '手機號碼', key: 'phoneNumber', width: 15 }
+      { header: "階級", key: "star", width: 15 },
+      { header: "代理商", key: "agentAccount", width: 15 },
+      { header: "使用者名稱", key: "memberName", width: 15 },
+      { header: "帳號", key: "account", width: 15 },
+      { header: "手機號碼", key: "phoneNumber", width: 15 },
+      { header: "存款金額", key: "totalDeposit", width: 15 },
+      { header: "提款金額", key: "totalWithdrawal", width: 15 },
+      { header: "總輸贏", key: "totalWinLose", width: 15 },
+      { header: "存取差", key: "totalProfit", width: 15 },
     ];
+    console.log(jsonData.length);
 
     // Add rows and apply conditional formatting
-    jsonData.forEach((item) => {
-      const row = worksheet.addRow({
-        agentAccount: item.agentAccount,
-        memberName: item.memberName,
-        account: item.account,
-        phoneNumber: item.phoneNumber
-      });
-
-      // Check if phone number is fake (doesn't start with 886)
-      const phoneNumber = String(item.phoneNumber);
-      if (!phoneNumber.startsWith('886')) {
-        // Apply light red background to all cells in the row
-        row.eachCell((cell) => {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFE0E0' } // Light red color
-          };
+    jsonData
+      .filter((item) => !fakePhoneNumbers.includes(String(item.phoneNumber)))
+      .forEach((item) => {
+        const row = worksheet.addRow({
+          star: item.star,
+          agentAccount: item.agentAccount,
+          memberName: item.memberName,
+          account: item.account,
+          phoneNumber: item.phoneNumber,
+          totalDeposit: item.history?.totalDeposit || 0,
+          totalWithdrawal: item.history?.totalWithdrawal || 0,
+          totalWinLose: item.history?.totalWinLose || 0,
+          totalProfit: (item.history?.totalDeposit || 0) - (item.history?.totalWithdrawal || 0),
         });
-      }
-    });
+
+        // Check if phone number is fake (doesn't start with 886)
+        const phoneNumber = String(item.phoneNumber);
+        if (!phoneNumber.startsWith("886")) {
+          // Apply light red background to all cells in the row
+          row.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFFE0E0" }, // Light red color
+            };
+          });
+        }
+      });
 
     // Style the header row
     worksheet.getRow(1).font = { bold: true };
 
+    console.log(worksheet.rowCount);
+
     try {
       // Generate the file
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'customer_data.xlsx';
+      a.download = "customer_data.xlsx";
       a.click();
       window.URL.revokeObjectURL(url);
       setJsonData(null);
     } catch (error) {
-      console.error('Error generating Excel file:', error);
-      alert('Error generating Excel file');
+      console.error("Error generating Excel file:", error);
+      alert("Error generating Excel file");
     }
   };
 
